@@ -5,6 +5,7 @@ import helper
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    autoescape=True,
     extensions=['jinja2.ext.autoescape'])
 
 
