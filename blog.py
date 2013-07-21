@@ -1,7 +1,7 @@
 import webapp2
 import os
 import jinja2
-
+from helper import rot13
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -14,16 +14,23 @@ class MainPage(webapp2.RequestHandler):
         self.response.write(template.render())
 
 
-class TestHandler(webapp2.RequestHandler):
+class Rot13Handler(webapp2.RequestHandler):
+    def get(self):
+        template = JINJA_ENVIRONMENT.get_template('ps2/rot13.html')
+        self.response.write(template.render(texts=""))
+
     def post(self):
-        q = self.request.get("q")
-        self.response.out.write(q)
+        texts = self.request.get('text')
+        texts = rot13(texts)
 
-        #self.response.headers['Content-Type'] = 'text/plain'
-        #self.response.out.write(self.request)
+        template_values = {
+            'texts': texts
+        }
 
+        template = JINJA_ENVIRONMENT.get_template('ps2/rot13.html')
+        self.response.write(template.render(template_values))
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/testform', TestHandler)
+    ('/rot13', Rot13Handler)
 ], debug=True)
