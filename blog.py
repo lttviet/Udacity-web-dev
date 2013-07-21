@@ -1,36 +1,71 @@
 import webapp2
 import os
 import jinja2
-from helper import rot13
+import helper
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
     extensions=['jinja2.ext.autoescape'])
 
 
-class MainPage(webapp2.RequestHandler):
-    def get(self):
-        template = JINJA_ENVIRONMENT.get_template('index.html')
-        self.response.write(template.render())
+def render_str(template, **kw):
+    t = JINJA_ENVIRONMENT.get_template(template)
+    return t.render(kw)
 
 
-class Rot13Handler(webapp2.RequestHandler):
+class BaseHandler(webapp2.RequestHandler):
+    def render(self, template, **kw):
+        self.response.write(render_str(template, **kw))
+
+
+class MainPage(BaseHandler):
     def get(self):
-        template = JINJA_ENVIRONMENT.get_template('ps2/rot13.html')
-        self.response.write(template.render(texts=""))
+        self.render('index.html')
+
+
+class Rot13Handler(BaseHandler):
+    def get(self):
+        self.render('unit2/rot13.html')
 
     def post(self):
         texts = self.request.get('text')
-        texts = rot13(texts)
+        texts = helper.rot13(texts)
 
-        template_values = {
-            'texts': texts
-        }
+        self.render('unit2/rot13.html', texts=texts)
 
-        template = JINJA_ENVIRONMENT.get_template('ps2/rot13.html')
-        self.response.write(template.render(template_values))
+
+class SignupHandler(BaseHandler):
+    def get(self):
+        self.render('unit2/signup.html')
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+        verify = self.request.get('verify')
+        email = self.request.get('email')
+
+        errors = helper.signup_errors(username, password, verify, email)
+
+        if not any(errors):
+            self.redirect('/unit2/welcome?username={}'.format(username))
+        else:
+            self.render('unit2/signup.html',
+                        username=username,
+                        email=email,
+                        username_error=errors[0],
+                        password_error=errors[1],
+                        verify_error=errors[2],
+                        email_error=errors[3])
+
+
+class WelcomeHandler(BaseHandler):
+    def get(self):
+        username = self.request.get('username')
+        self.render('unit2/welcome.html', username=username)
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/rot13', Rot13Handler)
+    ('/unit2/rot13', Rot13Handler),
+    ('/unit2/signup', SignupHandler),
+    ('/unit2/welcome', WelcomeHandler)
 ], debug=True)

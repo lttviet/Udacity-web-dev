@@ -1,0 +1,54 @@
+<html>                                                                          
+    <head>                                                                      
+    <title>Signup</title>                                             
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">      
+    </head>                                                                     
+                                                                                
+                                                                                
+    <body>
+        <div class="page-header">
+            <h1>Signup Form</h1>
+        </div>
+
+        <form method="post" class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label">Username</label>
+                <div class="controls">
+                    <input name="username" value="{{username}}" type="text" placeholder="User">
+                    {{username_error}}
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Password</label>
+                <div class="controls">
+                    <input name="password" type="password" placeholder="Password">
+                    {{password_error}}
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Verify Password</label>
+                <div class="controls">
+                    <input name="verify" type="password" placeholder="Verify Password">
+                    {{verify_error}}
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Email</label>
+                <div class="controls">
+                    <input name="email" value="{{email}}" placeholder="Email">
+                    {{email_error}} 
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="controls">
+                    <button type="submit" class="btn">Sign Up</button>
+                </div>
+            </div>
+        </form>
+    </body>
+</html>
