@@ -34,23 +34,16 @@ def valid_email(email):
 
 
 def signup_errors(username, password, verify, email):
-    if valid_username(username):
-        username_error = ''
-    else:
+    username_error = password_error = verify_error = email_error = ""
+    if not valid_username(username):
         username_error = 'Please enter a valid username'
 
-    if valid_password(password):
-        password_error = ''
-    else:
+    if not valid_password(password):
         password_error = 'Please enter a valid password'
 
-    if password == verify:
-        verify_error = ''
-    else:
+    if password != verify:
         verify_error = 'Your passwords don\'t match'
 
-    if not email or valid_email(email):
-        email_error = ''
-    else:
+    if email and not valid_email(email):
         email_error = 'Please enter a valid email'
     return (username_error, password_error, verify_error, email_error)
