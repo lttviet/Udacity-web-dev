@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <title>Blog</title>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+
+
+    <body>
+        <div class="text-center page-header">
+            <a href="/unit3"><h1>My blog</h1></a>
+        </div>    
+        <div class="row-fluid">
+            <div class="span8 offset2">
+                <a href="/unit3/newpost">New Post</a>
+                <br>
+        		{% for post in posts %}
+                    <b class="text-left">{{ post.subject }}</b> 
+        			<br>
+        			<pre>{{ post.content }}</pre>
+        		{% endfor %}
+        	</div>
+		</div>
+	</body>
+</html>
