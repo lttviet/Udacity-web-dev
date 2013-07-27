@@ -75,7 +75,8 @@ class WelcomeHandler(BaseHandler):
 class BlogHandler(BaseHandler):
     def get(self):
         posts = db.GqlQuery("SELECT * FROM Posts "
-                            "ORDER BY created DESC")
+                            "ORDER BY created DESC "
+                            "LIMIT 10")
         self.render("unit3/index.html",
                     posts=posts)
 
@@ -102,9 +103,7 @@ class NewPostHandler(BaseHandler):
             self.redirect("/unit3/{}".format(i))
         else:
             error = "Please input both subject and content!"
-            self.render_post(subject,
-                             content,
-                             error)
+            self.render_post(subject, content, error)
 
 
 class PermanentPost(BaseHandler):
