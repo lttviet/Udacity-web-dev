@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title>Problem set 1</title>
-        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-
-
-    <body>
-        <div class="hero-unit">
-            <h1>Hello, World!</h1>
-            <p>Front page requires big hello :)</p>
-        </div>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Main Page{% endblock %}
+{% block body %}
+    <div class="jumbotron">
+        <h1>Hello, World!</h1>
+        <p>Front page requires big hello :)</p>
+    </div>
+{% endblock %}

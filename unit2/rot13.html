@@ -1,25 +1,19 @@
-<html>
-    <head>
-    <title>Rot13 Encryption</title>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-
-
-    <body>
+{% extends "base.html" %}
+    {% block title %}Rot13 Encryption{% endblock %}
+    {% block body %}
         <div class="page-header text-center">
             <h1>Enter some texts for ROT13</h1>
         </div>
 
         <form method="post" class="form-horizontal text-center">
-            <div class="control-group">
-                <textarea name="text" class="span6" rows="10" placeholder="Write something here">{{ texts }}</textarea>
+            <div class="form-group">
+                <div class="col-lg-6 col-offset-3">
+                    <textarea name="text" class="form-control" rows="10" placeholder="Write something here">{{ texts }}</textarea>
+                </div>
             </div>
 
-            <div class="control-group">
-                <button type="submit" class="btn">Submit Query</button>
+            <div class="form-group">
+                <button type="submit" class="btn btn-default">Submit Query</button>
             </div>
         </form>
-    </body>
-
-</html>
+    {% endblock %}

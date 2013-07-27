@@ -1,23 +1,13 @@
-<!DOCTYPE html>
-<html>
-    <head>
-    <title>Permanent Post</title>
-    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
+{% extends "base.html" %}
+{% block title %}Permanent Link{% endblock %}
+{% block body %}
+    <div class="page-header text-center">
+        <a href="/unit3"><h1>My blog</h1></a>
+    </div>
 
-
-    <body>
-        <div class="page-header text-center">
-            <a href="/unit3"><h1>My blog</h1></a>
-        </div>
-
-        <div class="row-fluid">
-        	<div class="span8 offset2">
-                <p><b>{{ post.subject }}</b></p>
-        		<br>
-                <pre>{{ post.content }}</pre>
-        	</div>
-		</div>
-	</body>
-</html>
+    <div class="col-lg-8 col-offset-2">
+        <p><b>{{ post.subject }}</b></p>
+    	<br>
+        <pre>{{ post.content }}</pre>
+    </div>
+{% endblock %}
