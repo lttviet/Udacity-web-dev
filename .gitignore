@@ -1,3 +1,4 @@
 *.pyc
+SECRET.py
 
 .ropeproject
