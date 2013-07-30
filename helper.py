@@ -1,6 +1,9 @@
 import re
+from Crypto.Hash import SHA256, HMAC
+from SECRET import SECRET1, SECRET2
 
 
+# Unit 1
 def rot13(text):
     "Increase every letter in a text by 13 then return a new text"
 
@@ -16,6 +19,8 @@ def rot13(text):
             new_text += char
     return new_text
 
+
+# Unit 2
 USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
 PASSWORD_RE = re.compile(r'^.{3,20}$')
 EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
@@ -47,3 +52,19 @@ def signup_errors(username, password, verify, email):
     if email and not valid_email(email):
         email_error = 'Please enter a valid email'
     return (username_error, password_error, verify_error, email_error)
+
+
+# Unit 4
+def hash_pass(password, salt):
+    h = HMAC.new(salt, password + SECRET1, SHA256)
+    return h.hexdigest()
+
+
+def make_cookie(username):
+    h = HMAC.new(SECRET2, username, SHA256)
+    return "{}|{}".format(username, h.hexdigest())
+
+
+def valid_cookie(cookie):
+    username, hashed = cookie.split("|")
+    return make_cookie(username) == cookie

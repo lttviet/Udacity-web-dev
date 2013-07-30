@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title%}Signup{% endblock %}
+{% block body %}
+    <div class="page-header">
+        <h1>Signup Form</h1>
+    </div>
+
+    <form method="post" class="form-horizontal">
+        <div class="form-group">
+            <label class="col-lg-2 control-label">Username</label>
+            <div class="col-lg-4">
+                <input name="username" value="{{username}}" type="text" placeholder="User">
+                {{username_error}}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-lg-2 control-label">Password</label>
+            <div class="col-lg-4">
+                <input name="password" type="password" placeholder="Password">
+                {{password_error}}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-lg-2 control-label">Verify Password</label>
+            <div class="col-lg-4">
+                <input name="verify" type="password" placeholder="Verify Password">
+                {{verify_error}}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-lg-2 control-label">Email</label>
+            <div class="col-lg-4">
+                <input name="email" value="{{email}}" placeholder="Email">
+                {{email_error}}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-lg-4 col-offset-2">
+                <button type="submit" class="btn btn-default">Sign Up</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}
