@@ -58,9 +58,11 @@ class SignupHandler(BaseHandler):
 
         errors = helper.signup_errors(username, password, verify, email)
 
-        if not any(errors):
-            self.redirect('/unit2/welcome?username={}'.format(username))
-        else:
+        u = db.GqlQuery("SELECT * from User "
+                        "WHERE username =:1", username)
+        user_error = "This username has already been used." if u.get() else ""
+
+        if any(errors) or user_error:
             self.render('unit2/signup.html',
                         username=username,
                         email=email,
@@ -68,12 +70,29 @@ class SignupHandler(BaseHandler):
                         password_error=errors[1],
                         verify_error=errors[2],
                         email_error=errors[3])
+        else:
+            salt = ''.join([random.choice(string.ascii_letters + string.digits)
+                            for i in xrange(16)])
+            hashed_pass = helper.hash_pass(password, salt)
+            user = User(username=username, password=hashed_pass,
+                        salt=salt, email=email)
+            user.put()
+
+            cookie = helper.make_cookie(username)
+            self.response.headers.add_header("Set-Cookie",
+                                             "user={}; Path=/".format(cookie))
+            self.redirect('/unit2/welcome')
+
 
 
 class WelcomeHandler(BaseHandler):
     def get(self):
-        username = self.request.get('username')
-        self.render('unit2/welcome.html', username=username)
+        ck = self.request.cookies.get("user")
+
+        if helper.valid_cookie(ck):
+            self.render("/unit2/welcome.html", username=ck.split("|")[0])
+        else:
+            self.redirect("/unit2/signup")
 
 
 # Unit 3
@@ -129,56 +148,6 @@ class User(db.Model):
     email = db.StringProperty()
 
 
-class RegistrationHandler(BaseHandler):
-    def get(self):
-        self.render("unit4/signup.html")
-
-    def post(self):
-        username = self.request.get('username')
-        password = self.request.get('password')
-        verify = self.request.get('verify')
-        email = self.request.get('email')
-
-        errors = helper.signup_errors(username, password, verify, email)
-
-        u = db.GqlQuery("SELECT * from User "
-                        "WHERE username =:1", username)
-        user_error = ""
-        if u.get():
-            user_error = "This username has already been used."
-
-        if any(errors) or user_error:
-            self.render("unit4/signup.html",
-                        username=username,
-                        email=email,
-                        username_error=errors[0] or user_error,
-                        password_error=errors[1],
-                        verify_error=errors[2],
-                        email_error=errors[3])
-        else:
-            salt = ''.join([random.choice(string.ascii_letters + string.digits)
-                            for i in xrange(16)])
-            hashed_pass = helper.hash_pass(password, salt)
-            user = User(username=username, password=hashed_pass,
-                        salt=salt, email=email)
-            user.put()
-
-            cookie = helper.make_cookie(username)
-            self.response.headers.add_header("Set-Cookie",
-                                             "user={}; Path=/".format(cookie))
-            self.redirect("/unit4/welcome")
-
-
-class WelcomeCookie(BaseHandler):
-    def get(self):
-        ck = self.request.cookies.get("user")
-
-        if helper.valid_cookie(ck):
-            self.render("/unit4/welcome.html", username=ck.split("|")[0])
-        else:
-            self.redirect("/unit4/signup")
-
-
 class LoginHandler(BaseHandler):
     def get(self):
         self.render("/unit4/login.html")
@@ -198,9 +167,9 @@ class LoginHandler(BaseHandler):
                 self.response.headers.add_header("Set-Cookie",
                                                  "user={}; ".format(cookie) +
                                                  "Path=/")
-                self.redirect("/unit4/welcome")
-        error = "Invalid login!"
-        self.render("/unit4/login.html", error=error)
+                self.redirect("/unit2/welcome")
+        
+        self.render("/unit4/login.html", error="Invalid login!")
 
 
 class Logout(BaseHandler):
@@ -217,8 +186,6 @@ application = webapp2.WSGIApplication([
     ('/unit3', BlogHandler),
     ('/unit3/newpost', NewPostHandler),
     ('/unit3/([0-9]+)', PermanentPost),
-    ('/unit4/signup', RegistrationHandler),
-    ('/unit4/welcome', WelcomeCookie),
     ('/unit4/login', LoginHandler),
     ('/unit4/logout', Logout)
 ], debug=True)
