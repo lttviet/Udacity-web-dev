@@ -1,4 +1,6 @@
 import re
+import string
+import random
 from Crypto.Hash import SHA256, HMAC
 from SECRET import SECRET1, SECRET2
 
@@ -21,20 +23,18 @@ def rot13(text):
 
 
 # Unit 2
-USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
-PASSWORD_RE = re.compile(r'^.{3,20}$')
-EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
-
-
 def valid_username(username):
+    USER_RE = re.compile(r'^[a-zA-Z0-9_-]{3,20}$')
     return USER_RE.match(username)
 
 
 def valid_password(password):
+    PASSWORD_RE = re.compile(r'^.{3,20}$')
     return PASSWORD_RE.match(password)
 
 
 def valid_email(email):
+    EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
     return EMAIL_RE.match(email)
 
 
@@ -55,9 +55,18 @@ def signup_errors(username, password, verify, email):
 
 
 # Unit 4
+def make_salt():
+    return ''.join([random.choice(string.ascii_letters + string.digits)
+                    for i in xrange(16)])
+
+
 def hash_pass(password, salt):
     h = HMAC.new(salt, password + SECRET1, SHA256)
     return h.hexdigest()
+
+
+def valid_pass(input, salt, hashed_password):
+    return hash_pass(input, salt) == hashed_password
 
 
 def make_cookie(username):

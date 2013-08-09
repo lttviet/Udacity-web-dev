@@ -2,10 +2,10 @@
 {% block title %}Blog{% endblock %}
 {% block body %}
     <div class="text-center page-header">
-        <a href="/unit3"><h1>My blog</h1></a>
+        <a href="/blog"><h1>My blog</h1></a>
     </div>    
     <div class="col-lg-8 col-offset-2">
-        <a href="/unit3/newpost">New Post</a>
+        <a href="/blog/newpost">New Post</a>
         <br>
     	{% for post in posts %}
             <b class="text-left">{{ post.subject }}</b> 

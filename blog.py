@@ -2,20 +2,13 @@ import webapp2
 import os
 import jinja2
 import helper
-import string
-import random
 from google.appengine.ext import db
+
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
     autoescape=True,
     extensions=['jinja2.ext.autoescape'])
-
-
-class Posts(db.Model):
-    subject = db.StringProperty(required=True)
-    content = db.TextProperty(required=True)
-    created = db.DateProperty(auto_now_add=True)
 
 
 def render_str(template, **kw):
@@ -26,6 +19,15 @@ def render_str(template, **kw):
 class BaseHandler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.response.write(render_str(template, **kw))
+
+    def set_cookie(self, user):
+        cookie = helper.make_cookie(user)
+        self.response.headers.add_header(
+            "Set-Cookie",
+            "user={}; Path=/".format(cookie))
+
+    def logout(self):
+        self.response.headers.add_header("Set-Cookie", "user=; Path=/")
 
 
 # Unit 1
@@ -41,9 +43,7 @@ class Rot13Handler(BaseHandler):
 
     def post(self):
         texts = self.request.get('text')
-        texts = helper.rot13(texts)
-
-        self.render('unit2/rot13.html', texts=texts)
+        self.render('unit2/rot13.html', texts=helper.rot13(texts))
 
 
 class SignupHandler(BaseHandler):
@@ -60,29 +60,25 @@ class SignupHandler(BaseHandler):
 
         u = db.GqlQuery("SELECT * from User "
                         "WHERE username =:1", username)
-        user_error = "This username has already been used." if u.get() else ""
+        used_name = "This username has already been used." if u.get() else ""
 
-        if any(errors) or user_error:
+        if any(errors) or used_name:
             self.render('unit2/signup.html',
                         username=username,
                         email=email,
-                        username_error=errors[0],
+                        username_error=errors[0] or used_name,
                         password_error=errors[1],
                         verify_error=errors[2],
                         email_error=errors[3])
         else:
-            salt = ''.join([random.choice(string.ascii_letters + string.digits)
-                            for i in xrange(16)])
+            salt = helper.make_salt()
             hashed_pass = helper.hash_pass(password, salt)
             user = User(username=username, password=hashed_pass,
                         salt=salt, email=email)
             user.put()
 
-            cookie = helper.make_cookie(username)
-            self.response.headers.add_header("Set-Cookie",
-                                             "user={}; Path=/".format(cookie))
-            self.redirect('/unit2/welcome')
-
+            self.set_cookie(username)
+            self.redirect('/welcome')
 
 
 class WelcomeHandler(BaseHandler):
@@ -92,10 +88,16 @@ class WelcomeHandler(BaseHandler):
         if helper.valid_cookie(ck):
             self.render("/unit2/welcome.html", username=ck.split("|")[0])
         else:
-            self.redirect("/unit2/signup")
+            self.redirect("/signup")
 
 
 # Unit 3
+class Posts(db.Model):
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateProperty(auto_now_add=True)
+
+
 class BlogHandler(BaseHandler):
     def get(self):
         posts = db.GqlQuery("SELECT * FROM Posts "
@@ -124,7 +126,7 @@ class NewPostHandler(BaseHandler):
             p.put()
 
             i = p.key().id()
-            self.redirect("/unit3/{}".format(i))
+            self.redirect("/blog/{}".format(i))
         else:
             error = "Please input both subject and content!"
             self.render_post(subject, content, error)
@@ -161,31 +163,27 @@ class LoginHandler(BaseHandler):
 
         if user:
             salt = user.salt.encode("ascii")
-            hashed_pass = user.password.encode("ascii")
-            if helper.hash_pass(password, salt) == hashed_pass:
-                cookie = helper.make_cookie(username)
-                self.response.headers.add_header("Set-Cookie",
-                                                 "user={}; ".format(cookie) +
-                                                 "Path=/")
-                self.redirect("/unit2/welcome")
-        
+            hashed_pwd = user.password.encode("ascii")
+            if helper.valid_pass(password, salt, hashed_pwd):
+                self.set_cookie(username)
+                self.redirect("/welcome")
+
         self.render("/unit4/login.html", error="Invalid login!")
 
 
 class Logout(BaseHandler):
     def get(self):
-        self.response.headers.add_header("Set-Cookie",
-                                         "user=; Path=/")
-        self.redirect("/unit4/signup")
+        self.logout()
+        self.redirect("/signup")
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/unit2/rot13', Rot13Handler),
-    ('/unit2/signup', SignupHandler),
-    ('/unit2/welcome', WelcomeHandler),
-    ('/unit3', BlogHandler),
-    ('/unit3/newpost', NewPostHandler),
-    ('/unit3/([0-9]+)', PermanentPost),
-    ('/unit4/login', LoginHandler),
-    ('/unit4/logout', Logout)
+    ('/rot13', Rot13Handler),
+    ('/signup', SignupHandler),
+    ('/welcome', WelcomeHandler),
+    ('/blog', BlogHandler),
+    ('/blog/newpost', NewPostHandler),
+    ('/blog/([0-9]+)', PermanentPost),
+    ('/login', LoginHandler),
+    ('/logout', Logout)
 ], debug=True)
