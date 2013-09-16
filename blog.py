@@ -1,6 +1,7 @@
 import webapp2
 import os
 import jinja2
+import json
 import helper
 from google.appengine.ext import db
 
@@ -78,7 +79,7 @@ class SignupHandler(BaseHandler):
             user.put()
 
             self.set_cookie(username)
-            self.redirect('/welcome')
+            self.redirect('/blog/welcome')
 
 
 class WelcomeHandler(BaseHandler):
@@ -88,7 +89,7 @@ class WelcomeHandler(BaseHandler):
         if helper.valid_cookie(ck):
             self.render("/unit2/welcome.html", username=ck.split("|")[0])
         else:
-            self.redirect("/signup")
+            self.redirect("/blog/signup")
 
 
 # Unit 3
@@ -166,7 +167,7 @@ class LoginHandler(BaseHandler):
             hashed_pwd = user.password.encode("ascii")
             if helper.valid_pass(password, salt, hashed_pwd):
                 self.set_cookie(username)
-                self.redirect("/welcome")
+                self.redirect("/blog/welcome")
 
         self.render("/unit4/login.html", error="Invalid login!")
 
@@ -174,16 +175,46 @@ class LoginHandler(BaseHandler):
 class Logout(BaseHandler):
     def get(self):
         self.logout()
-        self.redirect("/signup")
+        self.redirect("/blog/signup")
+
+
+# Unit 5
+class BlogJson(BaseHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = ('application/json; '
+                                                 'charset=UTF-8')
+        allPosts = [{"content": p.content,
+                     "created": p.created.strftime('%c'),
+                     "subject": p.subject}
+                    for p in Posts.all()]
+        self.response.write(json.dumps(allPosts))
+
+
+class PermanentJson(BaseHandler):
+    def get(self, blog_id):
+        blog_id = blog_id.split(',')[0]
+        post = Posts.get_by_id(long(blog_id))
+        if post:
+            self.response.headers['Content-Type'] = ('application/json; '
+                                                     'charset=UTF-8')
+            p = {"content": post.content,
+                 "created": post.created.strftime('%c'),
+                 "subject": post.subject}
+            self.response.write(json.dumps(p))
+
+        else:
+            self.response.write("This page doesn't exist!")
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/rot13', Rot13Handler),
-    ('/signup', SignupHandler),
-    ('/welcome', WelcomeHandler),
+    ('/blog/signup', SignupHandler),
+    ('/blog/welcome', WelcomeHandler),
     ('/blog', BlogHandler),
+    ('/blog/.json', BlogJson),
     ('/blog/newpost', NewPostHandler),
     ('/blog/([0-9]+)', PermanentPost),
-    ('/login', LoginHandler),
-    ('/logout', Logout)
+    ('/blog/([0-9]+).json', PermanentJson),
+    ('/blog/login', LoginHandler),
+    ('/blog/logout', Logout)
 ], debug=True)
