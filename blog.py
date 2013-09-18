@@ -99,11 +99,23 @@ class Posts(db.Model):
     created = db.DateProperty(auto_now_add=True)
 
 
-class BlogHandler(BaseHandler):
-    def get(self):
+CACHE = {}
+
+
+def update_blog():
+    key = "top"
+    if key not in CACHE:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
+        posts = list(posts)
+        CACHE[key] = posts
+    return CACHE[key]
+
+
+class BlogHandler(BaseHandler):
+    def get(self):
+        posts = update_blog()
         self.render("unit3/index.html",
                     posts=posts)
 
@@ -125,6 +137,7 @@ class NewPostHandler(BaseHandler):
         if subject and content:
             p = Posts(subject=subject, content=content)
             p.put()
+            CACHE.clear()
 
             i = p.key().id()
             self.redirect("/blog/{}".format(i))
