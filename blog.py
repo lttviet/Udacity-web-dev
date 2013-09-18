@@ -102,9 +102,9 @@ class Posts(db.Model):
 CACHE = {}
 
 
-def update_blog():
+def update_blog(update=False):
     key = "top"
-    if key not in CACHE:
+    if update and key not in CACHE:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
@@ -137,7 +137,7 @@ class NewPostHandler(BaseHandler):
         if subject and content:
             p = Posts(subject=subject, content=content)
             p.put()
-            CACHE.clear()
+            update_blog(True)
 
             i = p.key().id()
             self.redirect("/blog/{}".format(i))
