@@ -104,13 +104,15 @@ CACHE = {}
 
 def update_blog(update=False):
     key = "top"
-    if update and key not in CACHE:
+    if not update and key in CACHE:
+        posts = CACHE[key]
+    else:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
         posts = list(posts)
         CACHE[key] = posts
-    return CACHE[key]
+    return posts
 
 
 class BlogHandler(BaseHandler):
