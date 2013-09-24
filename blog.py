@@ -1,9 +1,12 @@
 import webapp2
-import os
 import jinja2
+
+import os
 import json
 import helper
+
 from google.appengine.ext import db
+from google.appengine.api import memcache
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -99,19 +102,15 @@ class Posts(db.Model):
     created = db.DateProperty(auto_now_add=True)
 
 
-CACHE = {}
-
-
 def update_blog(update=False):
     key = "top"
-    if not update and key in CACHE:
-        posts = CACHE[key]
-    else:
+    posts = memcache.get(key)
+    if posts is None or update:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
         posts = list(posts)
-        CACHE[key] = posts
+        memcache.set(key, posts)
     return posts
 
 
