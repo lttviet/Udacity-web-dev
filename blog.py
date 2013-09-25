@@ -4,6 +4,7 @@ import jinja2
 import os
 import json
 import helper
+import time
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -102,6 +103,9 @@ class Posts(db.Model):
     created = db.DateProperty(auto_now_add=True)
 
 
+last_query = time.time()
+
+
 def update_blog(update=False):
     key = "top"
     posts = memcache.get(key)
@@ -111,14 +115,18 @@ def update_blog(update=False):
                             "LIMIT 10")
         posts = list(posts)
         memcache.set(key, posts)
+        global last_query
+        last_query = time.time()
     return posts
 
 
 class BlogHandler(BaseHandler):
     def get(self):
         posts = update_blog()
+        seconds = int(time.time() - last_query)
         self.render("unit3/index.html",
-                    posts=posts)
+                    posts=posts,
+                    seconds=seconds)
 
 
 class NewPostHandler(BaseHandler):
