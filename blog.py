@@ -103,26 +103,24 @@ class Posts(db.Model):
     created = db.DateProperty(auto_now_add=True)
 
 
-last_query = time.time()
-
-
 def update_blog(update=False):
     key = "top"
+    key_time = "top_seconds"
     posts = memcache.get(key)
-    if posts is None or update:
+    last_query = memcache.get(key_time)
+    if posts is None or last_query is None or update:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
         posts = list(posts)
         memcache.set(key, posts)
-        global last_query
-        last_query = time.time()
-    return posts
+        memcache.set(key_time, time.time())
+    return last_query, posts
 
 
 class BlogHandler(BaseHandler):
     def get(self):
-        posts = update_blog()
+        last_query, posts = update_blog()
         seconds = int(time.time() - last_query)
         self.render("unit3/index.html",
                     posts=posts,
@@ -149,6 +147,7 @@ class NewPostHandler(BaseHandler):
             update_blog(True)
 
             i = p.key().id()
+            memcache.set(str(i), time.time())
             self.redirect("/blog/{}".format(i))
         else:
             error = "Please input both subject and content!"
@@ -158,9 +157,11 @@ class NewPostHandler(BaseHandler):
 class PermanentPost(BaseHandler):
     def get(self, blog_id):
         post = Posts.get_by_id(long(blog_id))
+        seconds = int(time.time() - memcache.get(blog_id))
         if post:
             self.render("unit3/permanent.html",
-                        post=post)
+                        post=post,
+                        seconds=seconds)
         else:
             self.response.write("This page doesn't exist!")
 
