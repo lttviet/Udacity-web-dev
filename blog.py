@@ -4,7 +4,7 @@ import jinja2
 import os
 import json
 import helper
-import time
+from datetime import datetime
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -42,7 +42,7 @@ class MainPage(BaseHandler):
 
 
 # Unit 2
-class Rot13Handler(BaseHandler):
+class Rot13(BaseHandler):
     def get(self):
         self.render('unit2/rot13.html')
 
@@ -51,7 +51,7 @@ class Rot13Handler(BaseHandler):
         self.render('unit2/rot13.html', texts=helper.rot13(texts))
 
 
-class SignupHandler(BaseHandler):
+class Signup(BaseHandler):
     def get(self):
         self.render('unit2/signup.html')
 
@@ -86,7 +86,7 @@ class SignupHandler(BaseHandler):
             self.redirect('/blog/welcome')
 
 
-class WelcomeHandler(BaseHandler):
+class Welcome(BaseHandler):
     def get(self):
         ck = self.request.cookies.get("user")
 
@@ -103,32 +103,58 @@ class Posts(db.Model):
     created = db.DateProperty(auto_now_add=True)
 
 
-def update_blog(update=False):
-    key = "top"
-    key_time = "top_seconds"
-    posts = memcache.get(key)
-    if posts is None or update:
-        posts = db.GqlQuery("SELECT * FROM Posts "
-                            "ORDER BY created DESC "
-                            "LIMIT 10")
-        posts = list(posts)
-        memcache.set(key, posts)
-        memcache.set(key_time, time.time())
-
-    last_query = memcache.get(key_time)
-    return last_query, posts
+def age_set(key, val):
+    save_time = datetime.utcnow()
+    memcache.set(key, (val, save_time))
 
 
-class BlogHandler(BaseHandler):
+def age_get(key):
+    r = memcache.get(key)
+    if r:
+        val, save_time = r
+        age = (datetime.utcnow() - save_time).total_seconds()
+    else:
+        val, age = None, 0
+    return val, age
+
+
+def add_post(post):
+    post.put()
+    get_posts(update=True)
+    return str(post.key().id())
+
+
+def get_posts(update=False):
+    q = db.GqlQuery("SELECT * FROM Posts "
+                    "ORDER BY created DESC "
+                    "LIMIT 10")
+    mc_key = "BLOGS"
+
+    posts, age = age_get(mc_key)
+    if update or posts is None:
+        posts = list(q)
+        age_set(mc_key, posts)
+
+    return posts, age
+
+
+def age_str(age):
+    s = 'Queried {}s seconds ago.'
+    age = int(age)
+    if age == 1:
+        s = s.replace('seconds', 'second')
+    return s.format(age)
+
+
+class BlogFront(BaseHandler):
     def get(self):
-        last_query, posts = update_blog()
-        seconds = int(time.time() - last_query)
+        posts, age = get_posts()
         self.render("unit3/index.html",
                     posts=posts,
-                    seconds=seconds)
+                    age=age_str(age))
 
 
-class NewPostHandler(BaseHandler):
+class NewPost(BaseHandler):
     def render_post(self, subject="", content="", error=""):
         self.render("unit3/newpost.html",
                     subject=subject,
@@ -144,28 +170,30 @@ class NewPostHandler(BaseHandler):
 
         if subject and content:
             p = Posts(subject=subject, content=content)
-            p.put()
-            update_blog(True)
+            post_id = add_post(p)
 
-            i = p.key().id()
-            self.redirect("/blog/{}".format(i))
+            self.redirect("/blog/{}".format(post_id))
         else:
             error = "Please input both subject and content!"
             self.render_post(subject, content, error)
 
 
-class PermanentPost(BaseHandler):
-    def get(self, blog_id):
-        post = Posts.get_by_id(long(blog_id))
-        if memcache.get(blog_id) is None:
-            memcache.set(str(blog_id), time.time())
-        seconds = int(time.time() - memcache.get(blog_id))
-        if post:
-            self.render("unit3/permanent.html",
-                        post=post,
-                        seconds=seconds)
-        else:
-            self.response.write("This page doesn't exist!")
+class PostPage(BaseHandler):
+    def get(self, post_id):
+        post_key = 'POST_' + post_id
+
+        post, age = age_get(post_key)
+        if not post:
+            post = Posts.get_by_id(long(post_id))
+            if not post:
+                self.response.write("This page doesn't exist!")
+
+            age_set(post_key, post)
+            age = 0
+
+        self.render("unit3/permanent.html",
+                    post=post,
+                    age=age_str(age))
 
 
 # Unit 4
@@ -176,7 +204,7 @@ class User(db.Model):
     email = db.StringProperty()
 
 
-class LoginHandler(BaseHandler):
+class Login(BaseHandler):
     def get(self):
         self.render("/unit4/login.html")
 
@@ -204,7 +232,7 @@ class Logout(BaseHandler):
 
 
 # Unit 5
-class BlogJson(BaseHandler):
+class BlogFrontJson(BaseHandler):
     def get(self):
         self.response.headers['Content-Type'] = ('application/json; '
                                                  'charset=UTF-8')
@@ -215,7 +243,7 @@ class BlogJson(BaseHandler):
         self.response.write(json.dumps(allPosts))
 
 
-class PermanentJson(BaseHandler):
+class PostPageJson(BaseHandler):
     def get(self, blog_id):
         blog_id = blog_id.split(',')[0]
         post = Posts.get_by_id(long(blog_id))
@@ -240,15 +268,15 @@ class FlushMemcache(BaseHandler):
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/rot13', Rot13Handler),
-    ('/blog/signup', SignupHandler),
-    ('/blog/welcome', WelcomeHandler),
-    ('/blog', BlogHandler),
-    ('/blog/.json', BlogJson),
-    ('/blog/newpost', NewPostHandler),
-    ('/blog/([0-9]+)', PermanentPost),
-    ('/blog/([0-9]+).json', PermanentJson),
-    ('/blog/login', LoginHandler),
+    ('/rot13', Rot13),
+    ('/blog', BlogFront),
+    ('/blog/signup', Signup),
+    ('/blog/welcome', Welcome),
+    ('/blog/.json', BlogFrontJson),
+    ('/blog/newpost', NewPost),
+    ('/blog/([0-9]+)', PostPage),
+    ('/blog/([0-9]+).json', PostPageJson),
+    ('/blog/login', Login),
     ('/blog/logout', Logout),
     ('/blog/flush', FlushMemcache)
 ], debug=True)
