@@ -107,14 +107,15 @@ def update_blog(update=False):
     key = "top"
     key_time = "top_seconds"
     posts = memcache.get(key)
-    last_query = memcache.get(key_time)
-    if posts is None or last_query is None or update:
+    if posts is None or update:
         posts = db.GqlQuery("SELECT * FROM Posts "
                             "ORDER BY created DESC "
                             "LIMIT 10")
         posts = list(posts)
         memcache.set(key, posts)
         memcache.set(key_time, time.time())
+
+    last_query = memcache.get(key_time)
     return last_query, posts
 
 
@@ -147,7 +148,6 @@ class NewPostHandler(BaseHandler):
             update_blog(True)
 
             i = p.key().id()
-            memcache.set(str(i), time.time())
             self.redirect("/blog/{}".format(i))
         else:
             error = "Please input both subject and content!"
@@ -157,6 +157,8 @@ class NewPostHandler(BaseHandler):
 class PermanentPost(BaseHandler):
     def get(self, blog_id):
         post = Posts.get_by_id(long(blog_id))
+        if memcache.get(blog_id) is None:
+            memcache.set(str(blog_id), time.time())
         seconds = int(time.time() - memcache.get(blog_id))
         if post:
             self.render("unit3/permanent.html",
@@ -228,6 +230,14 @@ class PermanentJson(BaseHandler):
         else:
             self.response.write("This page doesn't exist!")
 
+
+# Unit 6
+class FlushMemcache(BaseHandler):
+    def get(self):
+        memcache.flush_all()
+        self.redirect('/blog')
+
+
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/rot13', Rot13Handler),
@@ -239,5 +249,6 @@ application = webapp2.WSGIApplication([
     ('/blog/([0-9]+)', PermanentPost),
     ('/blog/([0-9]+).json', PermanentJson),
     ('/blog/login', LoginHandler),
-    ('/blog/logout', Logout)
+    ('/blog/logout', Logout),
+    ('/blog/flush', FlushMemcache)
 ], debug=True)
