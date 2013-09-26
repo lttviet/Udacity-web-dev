@@ -19,3 +19,5 @@ PS4: [Registration](https://lttviet-cs253.appspot.com/blog/signup),
 [Logout](https://lttviet-cs253.appspot.com/logout)
 
 PS5: [Blog Json](http://lttviet-cs253.appspot.com/blog/.json)
+
+PS6: [Memcache Flush](http://lttviet-cs253.appspot.com/blog/flush)
