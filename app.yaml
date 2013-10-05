@@ -15,4 +15,4 @@ libraries:
 
 handlers:
 - url: /.*
-  script: blog.application
+  script: main.application
